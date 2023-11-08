@@ -34,8 +34,9 @@ n = np.size(BANKS)
 # plotting banks vs mkt index
 # plt.plot(t ,rMkt[1: n],t , rF[1: n])
 
-for banks in BANKS:
-    plt.scatter(erMkt, erBanks[:,banks], label = f'{banks} vs STOXXEURO 600')
+for num in range(len(BANKS)):
+    plt.scatter(erMkt, erBanks[:,num], label = f'{num} vs STOXXEURO 600')
     plt.xlabel('STOXXEURO 600- Monthly - 01/11/2009 - 31/10/2023')
-    plt.ylabel(f'{banks}')
+    plt.ylabel(f'{num}')
     plt.savefig('rMKTrF_monthly.png', dpi = 300)
+    plt.close()
