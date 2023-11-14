@@ -7,7 +7,7 @@ import statsmodels.api as sm
 import Experimental as ex
 
 # Define date - time index monthly
-t=pd.date_range(start ='01-11-2009', end ='31-10-2023', freq ='M')
+t = pd.date_range(start ='01-11-2009', end ='31-10-2023', freq ='M')
 
 # Import data from Excel File
 StoxxEuro = pd.read_excel('Data_Banks_EuroStoxx600_Euribor.xlsx', sheet_name="STOXXEURO600")
@@ -32,9 +32,14 @@ rF = np.array(RFREE/12)
 erBanks = np.subtract(rBanks, rF)[1:].T
 erMkt = np.subtract(rMkt, rF)[1:]
 
-ex.scatterplot(erMkt,erBanks, "Excess Return", "STOXXEURO 600", BANKS,
-               'STOXXEURO vs ','Equity_vs_Mkt')
+''''ex.scatterplot(erMkt,erBanks, "Excess Return", "STOXXEURO 600", BANKS,
+               'STOXXEURO vs ','Equity_vs_Mkt')'''
 
-df_quants = pd.DataFrame(ex.OLS(erMkt, erBanks, BANKS.columns))
-df_quants.index = ['alpha','beta','pvalue','r_squared']
+df_quants = ex.OLS(erMkt, erBanks, BANKS.columns)
+print(df_quants)
+
+average_erBanks = sum(erBanks)/len(erBanks)
+
+df_av_quants = ex.OLS(erMkt, average_erBanks, BANKS.columns)
+print(df_av_quants)
 

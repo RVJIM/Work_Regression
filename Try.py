@@ -5,7 +5,6 @@ import seaborn as sns
 import scipy as sp
 import statsmodels.api as sm
 import Experimental as ex
-from tabulate import tabulate
 
 # Define date - time index monthly
 t=pd.date_range(start ='01-11-2009', end ='31-10-2023', freq ='M')
@@ -33,4 +32,5 @@ rF = np.array(RFREE/12)
 erBanks = np.subtract(rBanks, rF)[1:].T
 erMkt = np.subtract(rMkt, rF)[1:]
 
-
+f = ex.ols_sum(erMkt, erBanks)
+print(f)
