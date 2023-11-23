@@ -35,11 +35,30 @@ erMkt = np.subtract(rMkt, rF)[1:]
 ''''ex.scatterplot(erMkt,erBanks, "Excess Return", "STOXXEURO 600", BANKS,
                'STOXXEURO vs ','Equity_vs_Mkt')'''
 
-df_quants = ex.OLS(erMkt, erBanks, BANKS.columns)
-print(df_quants)
+'''df_quants = ex.OLS(erMkt, erBanks, BANKS.columns)
+df_quants.to_latex('Quantities.lex')
 
 average_erBanks = sum(erBanks)/len(erBanks)
 
 df_av_quants = ex.OLS(erMkt, average_erBanks, BANKS.columns)
-print(df_av_quants)
+df_av_quants.to_latex('Quantities_Weighted_Portfolio.lex')'''
 
+# Create DataFrame for tests
+df_tests = pd.DataFrame(index = BANKS.columns)
+
+# Compute: RESET, WHite, Breusch-GOdfrey and Durbin-Watson tests
+# And insert them in previously created DataFrame 
+ex.RESET_test(erMkt, erBanks, df_tests, 'Excel_files')
+ex.White_test(erMkt, erBanks, df_tests, 'Excel_files')                         
+ex.Breusch_Godfrey_test(erMkt, erBanks, df_tests, 'Excel_files')
+ex.Durbin_Watson_test(erMkt, erBanks, df_tests, 'Excel_files')
+
+
+#Fama-French
+F_F_data = pd.read_csv('F-F_Research_Data_Factors.CSV', skiprows=3, nrows=1167, index_col=0)
+F_F_data.index = pd.to_datetime(F_F_data.index, format= '%Y%m')
+F_F_data.index = F_F_data.index + pd.offsets.MonthEnd()
+print(F_F_data)
+
+
+# Explanatory Variables - Unemployment, Real Estate Index, GDP, EUR/USD

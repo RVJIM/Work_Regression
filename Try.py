@@ -32,5 +32,21 @@ rF = np.array(RFREE/12)
 erBanks = np.subtract(rBanks, rF)[1:].T
 erMkt = np.subtract(rMkt, rF)[1:]
 
-f = ex.ols_sum(erMkt, erBanks)
-print(f)
+# Create DataFrame for tests
+df_tests = pd.DataFrame(index = BANKS.columns)
+
+# Compute: RESET, White, Breusch-GOdfrey and Durbin-Watson tests
+# And insert them in previously created DataFrame 
+df_tests = ex.RESET_test(erMkt, erBanks, df_tests)
+df_tests = ex.White_test(erMkt, erBanks, df_tests)                         
+df_tests = ex.Breusch_Godfrey_test(erMkt, erBanks, df_tests)
+df_tests = ex.Durbin_Watson_test(erMkt, erBanks, df_tests)
+#df_tests.to_latex('Tests.lex')
+
+print(df_tests)
+
+# Fama-French
+'''F_F_data = pd.read_csv('F-F_Research_Data_Factors.CSV', skiprows=3, nrows=1167, index_col=0)
+F_F_data.index = pd.to_datetime(F_F_data.index, format= '%Y%m')
+F_F_data.index = F_F_data.index + pd.offsets.MonthEnd()
+print(F_F_data)'''

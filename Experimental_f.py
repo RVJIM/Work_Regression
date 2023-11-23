@@ -35,7 +35,12 @@ def ols_sum(Market, Stocks):
     return Res
 
 
-def OLS(Market, Stocks, df_stocks):
+def OLS(Market, Stocks, df_stocks, folder_name):
+    cwd = os.getcwd()
+    
+    if not os.path.exists(folder_name):
+        folder_name = os.mkdir(cwd + "/" + folder_name)
+        
     X = np.column_stack((np.ones_like(Market), Market))
     dict = {}
 
@@ -61,13 +66,20 @@ def OLS(Market, Stocks, df_stocks):
     df.index = ['alpha','beta','pvalue','r_squared']
     return df
 
+
 def fitted_values(Res):
     fit_t = []
     for e in Res:
         fit_t.append(e.fittedvalues)
     return fit_t
 
+
 def RESET_test(Market, Stocks, df):
+    '''cwd = os.getcwd()
+    
+    if not os.path.exists(folder_name):
+        folder_name = os.mkdir(cwd + "/" + folder_name)'''
+        
     n = len(Stocks)
     Pvals_f = []
     X = np.column_stack((np.ones_like(Market), Market))
@@ -83,42 +95,71 @@ def RESET_test(Market, Stocks, df):
         RSSU = Res2.ssr
         Fstat=((RSSR-RSSU)/2)/(RSSU/n)
         Pval_f = 1-sp.stats.f.cdf(Fstat,2,n)
-        Pvals_f.append(Pval_f)
+        Pvals_f.append(round(Pval_f,4))
     df['RESET_test'] = Pvals_f
-    return df
+    
 
 def White_test(Market, Stocks, df):
+    '''cwd = os.getcwd()
+    
+    if not os.path.exists(folder_name):
+        folder_name = os.mkdir(cwd + "/" + folder_name)'''
+        
     X = np.column_stack((np.ones_like(Market), Market))
     pvals_chi = []
     for stock in Stocks:
         Res1 = sm.OLS(stock, X).fit()
         whitetest = sm.stats.diagnostic.het_white(Res1.resid,X)
-        pvals_chi.append(whitetest[1])
+        pvals_chi.append(round(whitetest[1],4))
     df['White_test'] = pvals_chi
-    return df
+
 
 def Breusch_Godfrey_test(Market, Stocks, df):
+    '''cwd = os.getcwd()
+    
+    if not os.path.exists(folder_name):
+        folder_name = os.mkdir(cwd + "/" + folder_name)'''
+        
     X = np.column_stack((np.ones_like(Market), Market))
     pvals_chi = []
     for stock in Stocks:
         Res1 = sm.OLS(stock, X).fit()
         bgtest=sm.stats.diagnostic.acorr_breusch_godfrey(Res1,nlags=3)
-        pvals_chi.append(bgtest[1])
+        pvals_chi.append(round(bgtest[1],4))
     df['BG_test'] = pvals_chi
-    return df
 
-def Durbin_Watson_test(Market, Stocks,df):
+def Durbin_Watson_test(Market, Stocks):
+    '''cwd = os.getcwd()
+    
+    if not os.path.exists(folder_name):
+        folder_name = os.mkdir(cwd + "/" + folder_name)'''
+        
     X = np.column_stack((np.ones_like(Market), Market))
     value = []
     for stock in Stocks:
         Res1 = sm.OLS(stock, X).fit()
         dw = sm.stats.stattools.durbin_watson(Res1.resid)
-        value.append(dw)
-    df['DW_Test'] = value
+        value.append(round(dw,4))
+    name = 'DW_test'
+    return name, value
+
+def DataFrame(index_df, folder_name, name_file, list_elements):
+    cwd = os.getcwd()
+    
+    if not os.path.exists(folder_name):
+        folder_name = os.mkdir(cwd + "/" + folder_name)
+    
+    df = pd.DataFrame(index = index_df)
+    
+    for n, e in zip(list_elements):
+        df[n] = e
+        
+    file = folder_name + "/" + name_file + '.xlsx'
+    
+    if not os.path.exists(file):
+        df.to_excel(file)
+    
     return df
-
-def DataFrame(rows, columns, values):
-    df = pd.DataFrame()
-
+    
 if __name__ == "__main__":
     "__main__"
