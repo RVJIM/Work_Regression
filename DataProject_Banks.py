@@ -39,6 +39,7 @@ ex.scatterplot(erMkt,erBanks, "Excess Return", "STOXXEURO 600", BANKS,
 # DataFrame with all quantities we need (I think)
 df_quants = ex.OLS(erMkt, erBanks, BANKS.columns)
 print(df_quants)
+
 ''' 
     If you want to download .xlsx file, change 40 with this
     df_quants.to_excel('Quants.xlsx')
@@ -50,8 +51,24 @@ average_erBanks = sum(erBanks)/len(erBanks)
 # DataFrame with all quantities for equally weighted portfolio
 df_av_quants = ex.OLS(erMkt, average_erBanks, BANKS.columns)
 print(df_av_quants)
+
 ''' 
     If you want to download .xlsx file, change 51 with this
     df_av_quants.to_excel('Quants_Weighted_Portfolio.xlsx')
+'''
+
+# Create DataFrame for tests
+df_tests = pd.DataFrame(index = BANKS.columns)
+
+# Compute: RESET, WHite, Breusch-GOdfrey and Durbin-Watson tests
+# And insert them in previously created DataFrame 
+df_tests = ex.RESET_test(erMkt, erBanks, df_tests)
+df_tests = ex.White_test(erMkt, erBanks, df_tests)                         
+df_tests = ex.Breusch_Godfrey_test(erMkt, erBanks, df_tests)
+df_tests = ex.Durbin_Watson_test(erMkt, erBanks, df_tests)
+
+''' 
+    If you want to download .xlsx file, change 51 with this
+    df_tests.to_excel('Tests.xlsx')
 '''
 # --- CORRELATION NOT BEING TOO HIGH --- BEFORE NEAR COLLINEARITY

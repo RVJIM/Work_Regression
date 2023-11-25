@@ -161,5 +161,23 @@ def DataFrame(index_df, folder_name, name_file, list_elements):
     
     return df
     
+
+def Chow_Test(Market, Stocks, ):
+    # regressions
+    n = np.size(Market)
+    m = 200
+    X1 = np.column_stack((np.ones_like(Market[1:m]), Market[1: m]))
+    X2 = np.column_stack((np.ones_like(Market[m+1: n]), Market[m+1: n]))
+    Res2a = sm.OLS(rMSFTe [1: m], X1).fit()
+    Res2b = sm.OLS(rMSFTe [m +1:n], X2).fit()
+    X = np.column_stack((np.ones_like(Market), Market))
+    Res1 = sm.OLS(rMSFTe[1: n], X[1: n]).fit()
+# Recover RSS
+    RSSU = Res2a .ssr + Res2b . ssr
+    RSSR = Res1 . ssr
+# Build test
+    Fstat =(( RSSR - RSSU ) /2) /( RSSU /(n -4) )
+    Pval =1-sp. stats .f. cdf(Fstat ,2,n -4)
+    Pval
 if __name__ == "__main__":
     "__main__"

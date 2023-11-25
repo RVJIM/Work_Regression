@@ -44,15 +44,16 @@ df_av_quants = ex.OLS(erMkt, average_erBanks, BANKS.columns)
 df_av_quants.to_latex('Quantities_Weighted_Portfolio.lex')'''
 
 # Create DataFrame for tests
-df_tests = pd.DataFrame(index = BANKS.columns)
+#df_tests = pd.DataFrame(index = BANKS.columns)
 
 # Compute: RESET, WHite, Breusch-GOdfrey and Durbin-Watson tests
 # And insert them in previously created DataFrame 
-ex.RESET_test(erMkt, erBanks, df_tests, 'Excel_files')
-ex.White_test(erMkt, erBanks, df_tests, 'Excel_files')                         
-ex.Breusch_Godfrey_test(erMkt, erBanks, df_tests, 'Excel_files')
-ex.Durbin_Watson_test(erMkt, erBanks, df_tests, 'Excel_files')
-
+'''df_tests = ex.RESET_test(erMkt, erBanks, df_tests, 'Excel_files')
+df_tests = ex.White_test(erMkt, erBanks, df_tests, 'Excel_files')                         
+df_tests = ex.Breusch_Godfrey_test(erMkt, erBanks, df_tests, 'Excel_files')
+df_tests = ex.Durbin_Watson_test(erMkt, erBanks, df_tests, 'Excel_files')
+df_tests.to_latex('Tests.lex')
+print(df_tests)'''
 
 #Fama-French
 F_F_data = pd.read_csv('F-F_Research_Data_Factors.CSV', skiprows=3, nrows=1167, index_col=0)
