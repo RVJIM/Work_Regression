@@ -35,16 +35,32 @@ def ols_sum(Market, Stocks):
     return Res
 
     
-def ols_hac_ste(Market, dict_Stocks, df_tests):
+def ols_hac_ste(Market, dict_Stocks, df_tests, folder_name):
+    cwd = os.getcwd()
+    
+    if not os.path.exists(folder_name):
+        folder_name = os.mkdir(cwd + "/" + folder_name)
+        
     dict = {}
     X = np.column_stack((np.ones_like(Market), Market))
-    stocks_e = [df_tests.loc[df_tests['White_test'] <= 0.05]|df_tests.loc[df_tests['BG_test'] <= 0.05]].index
+    stocks_e = df_tests.loc[df_tests['White_test'] <= 0.05].index
     for name in stocks_e:
         stock = dict_Stocks[name]
         Res1 = sm.OLS(stock, X).fit(cov_type='HAC', cov_kwds={'maxlags':1})
-        print(Res1.summary())
+        summary_data = Res1.summary().tables[1].data[1:]
+        df = pd.DataFrame(summary_data, columns=["Variable", "Coefficient", "Std. Error", "t-value", "P-value", "Lower CI", "Upper CI"])
+        df = df[["Std. Error", "P-value"]]
+        df.to_excel((folder_name + '/' + f'{name}2.xlsx'), sheet)
         Res = sm.OLS(stock, X).fit()
+        summary_data = Res.summary().tables[1].data[1:]
+        df = pd.DataFrame(summary_data, columns=["Variable", "Coefficient", "Std. Error", "t-value", "P-value", "Lower CI", "Upper CI"])
+        df = df[["Std. Error", "P-value"]]
+        df.to_excel((folder_name + '/' + f'{name}0.xlsx'))
         Res2 = Res.get_robustcov_results(cov_type='HAC', maxlags=1)
+        summary_data = Res2.summary().tables[1].data[1:]
+        df = pd.DataFrame(summary_data, columns=["Variable", "Coefficient", "Std. Error", "t-value", "P-value", "Lower CI", "Upper CI"])
+        df = df[["Std. Error", "P-value"]]
+        df.to_excel((folder_name + '/' + f'{name}1.xlsx'))
         dict[name] = [Res1.params[0], Res2.params[0], Res1.params[1], Res2.params[1], 
                       Res1.pvalues[1], Res2.pvalues[1], Res1.rsquared, Res2.rsquared]
         
@@ -180,7 +196,8 @@ def Chow_Test(Market, Stocks, name_Stocks, folder_name):
         
     X = np.column_stack((np.ones_like(Market), Market))
     n = np.size(Market)
-    w = 39
+    w = 36
+    t = pd.date_range(start = '2015-11-01', end ='2023-10-31', freq ='M')
     i1 = w
     i2 = n-w
     Fstat = np.empty(n-w-w+1, dtype=float)
@@ -190,13 +207,13 @@ def Chow_Test(Market, Stocks, name_Stocks, folder_name):
             X1 = np.column_stack((np.ones_like(Market[1:ii]), Market[1:ii]))
             X2 = np.column_stack((np.ones_like(Market [ii+1:n]), Market[ii+1:n]))
             Res1 = sm.OLS(stock[1:n], X[1:n]).fit()
-            Res2a = sm. OLS(stock[1:ii], X1).fit() 
-            Res2b = sm. OLS(stock[ii+1:n], X2).fit()
+            Res2a = sm.OLS(stock[1:ii], X1).fit() 
+            Res2b = sm.OLS(stock[ii+1:n], X2).fit()
             RSSR = Res1.ssr
             RSSU = Res2a.ssr+Res2b.ssr
             Fstat[ii-w+1] = ((RSSR-RSSU)/2)/(RSSU/(n-4))
             Pval[ii-w+1] = 1-sp.stats.f.cdf(Fstat[ii-w+1],2,n-4)
-            plt.plot(range(i1,i2+1),Pval,range(i1,i2+1),0.01*np. ones_like(Pval))
-            plt.xlabel(f'Chow test for {name} - moving break date')
-            plt.savefig(folder_name + '/' + f'chowmoving of {name}' + '.png', dpi=300)
+            plt.plot(t,Pval,t,0.01*np.ones_like(Pval))
+            plt.title(f'Chow test for {name} - moving break date')
+            plt.savefig(folder_name + '/' + f'CHOWING OF {name}' + '.png', dpi=300)
             plt.close()

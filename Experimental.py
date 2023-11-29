@@ -119,7 +119,7 @@ def Durbin_Watson_test(Market, Stocks,df):
 
 def Chow_Test(Market, Stocks):
     n=np.size(Market)
-    m=60
+    m=36
     X = np.column_stack((np.ones_like(Market), Market))
     for stock in Stocks:
         X1 = np.column_stack((np.ones_like(Market[1:m]), Market[1:m]))
@@ -133,7 +133,3 @@ def Chow_Test(Market, Stocks):
         Pval=1-sp.stats.f.cdf(Fstat,2,n-4)
         return Pval
     
-        
-        
-if __name__ == "__main__":
-    "__main__"

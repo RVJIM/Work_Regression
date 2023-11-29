@@ -71,4 +71,8 @@ df_tests = ex.Durbin_Watson_test(erMkt, erBanks, df_tests)
     If you want to download .xlsx file, change 51 with this
     df_tests.to_excel('Tests.xlsx')
 '''
+
+# Compute and create lineplot for Chow Test - moving break dates 
+ex.Chow_Test(erMkt, erBanks, BANKS.columns, 'Chow_Testing')
+
 # --- CORRELATION NOT BEING TOO HIGH --- BEFORE NEAR COLLINEARITY
