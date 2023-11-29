@@ -34,38 +34,44 @@ def ols_sum(Market, Stocks):
         Res.append(Res1.summary())
     return Res
 
-
-def OLS(Market, Stocks, df_stocks, folder_name):
-    cwd = os.getcwd()
     
-    if not os.path.exists(folder_name):
-        folder_name = os.mkdir(cwd + "/" + folder_name)
-        
-    X = np.column_stack((np.ones_like(Market), Market))
+def ols_hac_ste(Market, dict_Stocks, df_tests):
     dict = {}
-
-    try:
-        Stocks.shape[1]
-        for stock,name in zip(Stocks,df_stocks):
-            Res1 = sm.OLS(stock, X).fit()
-            alpha = Res1.params[0]
-            beta = Res1.params[1]
-            p_value = Res1.pvalues[1]
-            r_squared = Res1.rsquared
-            dict[name] = [alpha, beta, p_value, r_squared]
-             
-    except:
-        Res1 = sm.OLS(Stocks, X).fit()
-        alpha = Res1.params[0]
-        beta = Res1.params[1]
-        p_value = Res1.pvalues[1]
-        r_squared = Res1.rsquared
-        dict["Equally Weighted Portfolio"] = [alpha, beta, p_value, r_squared]
+    X = np.column_stack((np.ones_like(Market), Market))
+    stocks_e = [df_tests.loc[df_tests['White_test'] <= 0.05]|df_tests.loc[df_tests['BG_test'] <= 0.05]].index
+    for name in stocks_e:
+        stock = dict_Stocks[name]
+        Res1 = sm.OLS(stock, X).fit(cov_type='HAC', cov_kwds={'maxlags':1})
+        print(Res1.summary())
+        Res = sm.OLS(stock, X).fit()
+        Res2 = Res.get_robustcov_results(cov_type='HAC', maxlags=1)
+        dict[name] = [Res1.params[0], Res2.params[0], Res1.params[1], Res2.params[1], 
+                      Res1.pvalues[1], Res2.pvalues[1], Res1.rsquared, Res2.rsquared]
         
-    df = pd.DataFrame(dict)
-    df.index = ['alpha','beta','pvalue','r_squared']
+    df = pd.DataFrame(dict).T
+    df.columns = ['alpha', 'alpha_r', 'beta', 'beta_r', 
+                'p_value', 'p_value_r', 'r_squared', 'r_squared_r']
     return df
 
+
+def OLS(Market, Stocks, names_stocks, covariance_type='nonrobust'):
+    dict = {}
+ 
+    try:
+        Stocks.shape[0]
+        X = np.column_stack((np.ones_like(Market), Market))
+        for stock, name in zip(Stocks, names_stocks):
+            Res1 = sm.OLS(stock, X).fit(cov_type=covariance_type)
+            print(Res1.summary())
+            dict[name] = [Res1.params[0], Res1.params[1], Res1.pvalues[1], Res1.rsquared]
+        
+    except:
+        X = np.column_stack((np.ones_like(Stocks), Stocks))
+        Res1 = sm.OLS(Stocks, X).fit()
+        dict["Equally Weighted Portfolio"] = [Res1.params[0], Res1.params[1], Res1.pvalues[1], Res1.rsquared]
+        
+    df = pd.DataFrame(dict, index=['alpha', 'beta', 'pvalue', 'r_squared'])
+    return df.T
 
 def fitted_values(Res):
     fit_t = []
@@ -97,7 +103,7 @@ def RESET_test(Market, Stocks, df):
         Pval_f = 1-sp.stats.f.cdf(Fstat,2,n)
         Pvals_f.append(round(Pval_f,4))
     df['RESET_test'] = Pvals_f
-    
+    return df
 
 def White_test(Market, Stocks, df):
     '''cwd = os.getcwd()
@@ -112,6 +118,7 @@ def White_test(Market, Stocks, df):
         whitetest = sm.stats.diagnostic.het_white(Res1.resid,X)
         pvals_chi.append(round(whitetest[1],4))
     df['White_test'] = pvals_chi
+    return df
 
 
 def Breusch_Godfrey_test(Market, Stocks, df):
@@ -127,8 +134,10 @@ def Breusch_Godfrey_test(Market, Stocks, df):
         bgtest=sm.stats.diagnostic.acorr_breusch_godfrey(Res1,nlags=3)
         pvals_chi.append(round(bgtest[1],4))
     df['BG_test'] = pvals_chi
+    return df
 
-def Durbin_Watson_test(Market, Stocks):
+
+def Durbin_Watson_test(Market, Stocks, df):
     '''cwd = os.getcwd()
     
     if not os.path.exists(folder_name):
@@ -140,10 +149,11 @@ def Durbin_Watson_test(Market, Stocks):
         Res1 = sm.OLS(stock, X).fit()
         dw = sm.stats.stattools.durbin_watson(Res1.resid)
         value.append(round(dw,4))
-    name = 'DW_test'
-    return name, value
+    df['DW_test'] = value
+    return df
+    
 
-def DataFrame(index_df, folder_name, name_file, list_elements):
+'''def DataFrame(index_df, folder_name, name_file, list_elements):
     cwd = os.getcwd()
     
     if not os.path.exists(folder_name):
@@ -159,25 +169,34 @@ def DataFrame(index_df, folder_name, name_file, list_elements):
     if not os.path.exists(file):
         df.to_excel(file)
     
-    return df
+    return df'''
     
-
-def Chow_Test(Market, Stocks, ):
-    # regressions
-    n = np.size(Market)
-    m = 200
-    X1 = np.column_stack((np.ones_like(Market[1:m]), Market[1: m]))
-    X2 = np.column_stack((np.ones_like(Market[m+1: n]), Market[m+1: n]))
-    Res2a = sm.OLS(rMSFTe [1: m], X1).fit()
-    Res2b = sm.OLS(rMSFTe [m +1:n], X2).fit()
+    
+def Chow_Test(Market, Stocks, name_Stocks, folder_name):
+    cwd = os.getcwd()
+    
+    if not os.path.exists(folder_name):
+        folder_name = os.mkdir(cwd + "/" + folder_name)
+        
     X = np.column_stack((np.ones_like(Market), Market))
-    Res1 = sm.OLS(rMSFTe[1: n], X[1: n]).fit()
-# Recover RSS
-    RSSU = Res2a .ssr + Res2b . ssr
-    RSSR = Res1 . ssr
-# Build test
-    Fstat =(( RSSR - RSSU ) /2) /( RSSU /(n -4) )
-    Pval =1-sp. stats .f. cdf(Fstat ,2,n -4)
-    Pval
-if __name__ == "__main__":
-    "__main__"
+    n = np.size(Market)
+    w = 39
+    i1 = w
+    i2 = n-w
+    Fstat = np.empty(n-w-w+1, dtype=float)
+    Pval = np.empty(n-w-w+1, dtype=float)
+    for stock, name in zip(Stocks,name_Stocks):
+        for ii in range (i1,i2):
+            X1 = np.column_stack((np.ones_like(Market[1:ii]), Market[1:ii]))
+            X2 = np.column_stack((np.ones_like(Market [ii+1:n]), Market[ii+1:n]))
+            Res1 = sm.OLS(stock[1:n], X[1:n]).fit()
+            Res2a = sm. OLS(stock[1:ii], X1).fit() 
+            Res2b = sm. OLS(stock[ii+1:n], X2).fit()
+            RSSR = Res1.ssr
+            RSSU = Res2a.ssr+Res2b.ssr
+            Fstat[ii-w+1] = ((RSSR-RSSU)/2)/(RSSU/(n-4))
+            Pval[ii-w+1] = 1-sp.stats.f.cdf(Fstat[ii-w+1],2,n-4)
+            plt.plot(range(i1,i2+1),Pval,range(i1,i2+1),0.01*np. ones_like(Pval))
+            plt.xlabel(f'Chow test for {name} - moving break date')
+            plt.savefig(folder_name + '/' + f'chowmoving of {name}' + '.png', dpi=300)
+            plt.close()
