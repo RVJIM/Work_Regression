@@ -27,7 +27,7 @@ BANKS.columns = BANKS.columns.str.replace(' - TOT RETURN IND','')
 rBanks = np.array(100 * (np.log(BANKS) - np.log(BANKS.shift(1)))) 
 rMkt = np.array(100 * (np.log(MKT) - np.log(MKT.shift(1))))
 rF = np.array(RFREE/12)
-print(rBanks)
+
 # Compute excess returns 
 erBanks = np.subtract(rBanks, rF)[1:].T
 erMkt = np.subtract(rMkt, rF)[1:]

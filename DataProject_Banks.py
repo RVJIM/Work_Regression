@@ -62,10 +62,10 @@ df_tests = pd.DataFrame(index = BANKS.columns)
 
 # Compute: RESET, WHite, Breusch-GOdfrey and Durbin-Watson tests
 # And insert them in previously created DataFrame 
-df_tests = ex.RESET_test(erMkt, erBanks, df_tests)
-df_tests = ex.White_test(erMkt, erBanks, df_tests)                         
-df_tests = ex.Breusch_Godfrey_test(erMkt, erBanks, df_tests)
-df_tests = ex.Durbin_Watson_test(erMkt, erBanks, df_tests)
+df_tests = ex.reset_test(erMkt, erBanks, df_tests)
+df_tests = ex.white_test(erMkt, erBanks, df_tests)                         
+df_tests = ex.breusch_godfrey_test(erMkt, erBanks, df_tests)
+df_tests = ex.durbin_watson_test(erMkt, erBanks, df_tests)
 
 ''' 
     If you want to download .xlsx file, change 51 with this

@@ -5,13 +5,31 @@ import seaborn as sns
 import scipy as sp
 import os
 import statsmodels.api as sm
+from xlsxwriter import Workbook
 
+def create_folder(folder_name):
+    cwd = os.getcwd()
+    folder_path = os.path.join(cwd, folder_name)
+    
+    if not os.path.exists(folder_path):
+        os.mkdir(folder_path)
+    
+    return folder_path
+
+def residuals(result):
+    residuals = []
+    for e in result:
+        residuals.append(e.resid)
+    return residuals
+
+def fitted_values(result):
+    fit_t = []
+    for e in result:
+        fit_t.append(e.fittedvalues)
+    return fit_t
 
 def scatterplot(Market, Stocks, title, xlabel, ylabel, how_to_save, folder_name):
-    cwd = os.getcwd()
-    
-    if not os.path.exists(folder_name):
-        folder_name = os.mkdir(cwd + "/" + folder_name)
+    folder_path = create_folder(folder_name)
         
     ylabel = iter(ylabel.columns)
     
@@ -22,52 +40,87 @@ def scatterplot(Market, Stocks, title, xlabel, ylabel, how_to_save, folder_name)
         plt.title(title)
         plt.xlabel(xlabel)
         plt.ylabel(ylabel_i)
-        plt.savefig(folder_name + '/' + how_to_save + ylabel_i + '.png')
+        plt.savefig(folder_path + how_to_save + ylabel_i + '.png')
+        plt.close()
+  
+
+def lineplot(Market, Stocks, title, xlabel, ylabel, how_to_save, folder_name):
+    folder_path = create_folder(folder_name)
+        
+    ylabel = iter(ylabel.columns)
+    
+    for stock in Stocks:  
+        ylabel_i = next(ylabel)  
+        plt.figure()
+        plt.scatter(Market, stock, label = title)
+        plt.title(title)
+        plt.xlabel(xlabel)
+        plt.ylabel(ylabel_i)
+        plt.savefig(folder_path + how_to_save + ylabel_i + '.png')
         plt.close()
   
   
 def ols_sum(Market, Stocks):
     X = np.column_stack((np.ones_like(Market), Market))
-    Res = []
+    results = []
     for stock in Stocks:
-        Res1 = sm.OLS(stock, X).fit()
-        Res.append(Res1.summary())
-    return Res
+        result = sm.OLS(stock, X).fit()
+        results.append(result)
+    return results
 
     
-def ols_hac_ste(Market, dict_Stocks, df_tests, folder_name):
+'''def ols_rob_ste(Market, dict_Stocks, df_tests, folder_name, covariance_type):
     cwd = os.getcwd()
+    folder_path = os.path.join(cwd, folder_name)
     
-    if not os.path.exists(folder_name):
-        folder_name = os.mkdir(cwd + "/" + folder_name)
+    if not os.path.exists(folder_path):
+        os.mkdir(folder_path)
         
-    dict = {}
     X = np.column_stack((np.ones_like(Market), Market))
     stocks_e = df_tests.loc[df_tests['White_test'] <= 0.05].index
+    
     for name in stocks_e:
         stock = dict_Stocks[name]
-        Res1 = sm.OLS(stock, X).fit(cov_type='HAC', cov_kwds={'maxlags':1})
-        summary_data = Res1.summary().tables[1].data[1:]
-        df = pd.DataFrame(summary_data, columns=["Variable", "Coefficient", "Std. Error", "t-value", "P-value", "Lower CI", "Upper CI"])
-        df = df[["Std. Error", "P-value"]]
-        df.to_excel((folder_name + '/' + f'{name}2.xlsx'), sheet)
-        Res = sm.OLS(stock, X).fit()
-        summary_data = Res.summary().tables[1].data[1:]
-        df = pd.DataFrame(summary_data, columns=["Variable", "Coefficient", "Std. Error", "t-value", "P-value", "Lower CI", "Upper CI"])
-        df = df[["Std. Error", "P-value"]]
-        df.to_excel((folder_name + '/' + f'{name}0.xlsx'))
-        Res2 = Res.get_robustcov_results(cov_type='HAC', maxlags=1)
-        summary_data = Res2.summary().tables[1].data[1:]
-        df = pd.DataFrame(summary_data, columns=["Variable", "Coefficient", "Std. Error", "t-value", "P-value", "Lower CI", "Upper CI"])
-        df = df[["Std. Error", "P-value"]]
-        df.to_excel((folder_name + '/' + f'{name}1.xlsx'))
-        dict[name] = [Res1.params[0], Res2.params[0], Res1.params[1], Res2.params[1], 
-                      Res1.pvalues[1], Res2.pvalues[1], Res1.rsquared, Res2.rsquared]
         
-    df = pd.DataFrame(dict).T
-    df.columns = ['alpha', 'alpha_r', 'beta', 'beta_r', 
-                'p_value', 'p_value_r', 'r_squared', 'r_squared_r']
-    return df
+        result = sm.OLS(stock, X).fit()
+        summary_data = result.summary().tables[1].data[1:]
+        df = pd.DataFrame(summary_data, columns=["Variable", "Coefficient", "Std. Error", "t-value", "P-value", "Lower CI", "Upper CI"])
+        df = df[["Std. Error", "P-value"]]
+    
+        result_hac = result.get_robustcov_results(cov_type=covariance_type, maxlags=1)
+        summary_data_hac = result_hac.summary().tables[1].data[1:]
+        df_hac = pd.DataFrame(summary_data_hac, columns=["Variable", "Coefficient", "Std. Error", "t-value", "P-value", "Lower CI", "Upper CI"])
+        df_hac = df_hac[["Std. Error", "P-value"]]
+        
+        file_path = os.path.join(folder_path, f'{name}.xlsx')
+        with pd.ExcelWriter(file_path, engine='xlsxwriter') as writer:
+            df.to_excel(writer, sheet_name='Non Robust')
+            df_hac.to_excel(writer, sheet_name=covariance_type)'''
+    
+def ols_rob_ste(Market, dict_Stocks, df_tests, folder_name, covariance_type):
+    
+    folder_path = create_folder(folder_name)
+        
+    X = np.column_stack((np.ones_like(Market), Market))
+    stocks_e = df_tests.loc[df_tests['White_test'] <= 0.05].index
+    
+    for name in stocks_e:
+        stock = dict_Stocks[name]
+        
+        result = sm.OLS(stock, X).fit()
+        df = pd.DataFrame(result.summary().tables[1].data[1:],
+                          columns=["Variable", "Coefficient", "Std. Error", "t-value", "P-value", "Lower CI", "Upper CI"])
+        df = df[["Std. Error", "P-value"]]
+    
+        result_hac = result.get_robustcov_results(cov_type=covariance_type, maxlags=1)
+        df_hac = pd.DataFrame(result_hac.summary().tables[1].data[1:],
+                              columns=["Variable", "Coefficient", "Std. Error", "t-value", "P-value", "Lower CI", "Upper CI"])
+        df_hac = df_hac[["Std. Error", "P-value"]]
+        
+        file_path = os.path.join(folder_path, f'{name}.xlsx')
+        with pd.ExcelWriter(file_path, engine='xlsxwriter') as writer:
+            df.to_excel(writer, sheet_name='Non Robust')
+            df_hac.to_excel(writer, sheet_name=covariance_type)
 
 
 def OLS(Market, Stocks, names_stocks, covariance_type='nonrobust'):
@@ -78,8 +131,8 @@ def OLS(Market, Stocks, names_stocks, covariance_type='nonrobust'):
         X = np.column_stack((np.ones_like(Market), Market))
         for stock, name in zip(Stocks, names_stocks):
             Res1 = sm.OLS(stock, X).fit(cov_type=covariance_type)
-            print(Res1.summary())
-            dict[name] = [Res1.params[0], Res1.params[1], Res1.pvalues[1], Res1.rsquared]
+            dict[name] = [round(Res1.params[0],4), round(Res1.params[1],4), 
+                          round(Res1.pvalues[1],4), round(Res1.rsquared,4)]
         
     except:
         X = np.column_stack((np.ones_like(Stocks), Stocks))
@@ -89,44 +142,30 @@ def OLS(Market, Stocks, names_stocks, covariance_type='nonrobust'):
     df = pd.DataFrame(dict, index=['alpha', 'beta', 'pvalue', 'r_squared'])
     return df.T
 
-def fitted_values(Res):
-    fit_t = []
-    for e in Res:
-        fit_t.append(e.fittedvalues)
-    return fit_t
 
-
-def RESET_test(Market, Stocks, df):
-    '''cwd = os.getcwd()
+def reset_test(Market, Stocks, df):
     
-    if not os.path.exists(folder_name):
-        folder_name = os.mkdir(cwd + "/" + folder_name)'''
-        
     n = len(Stocks)
     Pvals_f = []
     X = np.column_stack((np.ones_like(Market), Market))
+    
     for stock in Stocks:
         Res1 = sm.OLS(stock, X).fit()
         fit = Res1.fittedvalues
-        XR = np.column_stack((np.ones_like(Market), Market, np.power(fit,2),
-                            np.power(fit,3)))
+        XR = np.column_stack((np.ones_like(Market), Market, np.power(fit, 2), np.power(fit, 3)))
         Res2 = sm.OLS(stock, XR).fit()
         
-        #Test
         RSSR = Res1.ssr
         RSSU = Res2.ssr
-        Fstat=((RSSR-RSSU)/2)/(RSSU/n)
-        Pval_f = 1-sp.stats.f.cdf(Fstat,2,n)
-        Pvals_f.append(round(Pval_f,4))
+        Fstat = ((RSSR - RSSU) / 2) / (RSSU / n)
+        Pval_f = 1 - sp.stats.f.cdf(Fstat, 2, n)
+        Pvals_f.append(round(Pval_f, 4))
+    
     df['RESET_test'] = Pvals_f
     return df
 
-def White_test(Market, Stocks, df):
-    '''cwd = os.getcwd()
+def white_test(Market, Stocks, df):
     
-    if not os.path.exists(folder_name):
-        folder_name = os.mkdir(cwd + "/" + folder_name)'''
-        
     X = np.column_stack((np.ones_like(Market), Market))
     pvals_chi = []
     for stock in Stocks:
@@ -137,35 +176,27 @@ def White_test(Market, Stocks, df):
     return df
 
 
-def Breusch_Godfrey_test(Market, Stocks, df):
-    '''cwd = os.getcwd()
-    
-    if not os.path.exists(folder_name):
-        folder_name = os.mkdir(cwd + "/" + folder_name)'''
-        
+def breusch_godfrey_test(Market, Stocks, df):
+
     X = np.column_stack((np.ones_like(Market), Market))
     pvals_chi = []
     for stock in Stocks:
-        Res1 = sm.OLS(stock, X).fit()
-        bgtest=sm.stats.diagnostic.acorr_breusch_godfrey(Res1,nlags=3)
+        model = sm.OLS(stock, X).fit()
+        bgtest=sm.stats.diagnostic.acorr_breusch_godfrey(model,nlags=3)
         pvals_chi.append(round(bgtest[1],4))
     df['BG_test'] = pvals_chi
     return df
 
 
-def Durbin_Watson_test(Market, Stocks, df):
-    '''cwd = os.getcwd()
-    
-    if not os.path.exists(folder_name):
-        folder_name = os.mkdir(cwd + "/" + folder_name)'''
-        
+def durbin_watson_test(Market, Stocks, df):
     X = np.column_stack((np.ones_like(Market), Market))
-    value = []
+    dw_values = []
     for stock in Stocks:
-        Res1 = sm.OLS(stock, X).fit()
-        dw = sm.stats.stattools.durbin_watson(Res1.resid)
-        value.append(round(dw,4))
-    df['DW_test'] = value
+        model = sm.OLS(stock, X)
+        results = model.fit()
+        dw = sm.stats.stattools.durbin_watson(results.resid)
+        dw_values.append(round(dw, 4))
+    df['DW_Test'] = dw_values
     return df
     
 
@@ -188,32 +219,156 @@ def Durbin_Watson_test(Market, Stocks, df):
     return df'''
     
     
-def Chow_Test(Market, Stocks, name_Stocks, folder_name):
-    cwd = os.getcwd()
+def chow_test(Market, Stocks, name_Stocks, folder_name):
+    folder_path = create_folder(folder_name)
     
-    if not os.path.exists(folder_name):
-        folder_name = os.mkdir(cwd + "/" + folder_name)
-        
     X = np.column_stack((np.ones_like(Market), Market))
-    n = np.size(Market)
+    n = len(Market)
     w = 36
     t = pd.date_range(start = '2015-11-01', end ='2023-10-31', freq ='M')
     i1 = w
     i2 = n-w
     Fstat = np.empty(n-w-w+1, dtype=float)
     Pval = np.empty(n-w-w+1, dtype=float)
+    
     for stock, name in zip(Stocks,name_Stocks):
         for ii in range (i1,i2):
             X1 = np.column_stack((np.ones_like(Market[1:ii]), Market[1:ii]))
             X2 = np.column_stack((np.ones_like(Market [ii+1:n]), Market[ii+1:n]))
+            
             Res1 = sm.OLS(stock[1:n], X[1:n]).fit()
             Res2a = sm.OLS(stock[1:ii], X1).fit() 
             Res2b = sm.OLS(stock[ii+1:n], X2).fit()
+            
             RSSR = Res1.ssr
             RSSU = Res2a.ssr+Res2b.ssr
             Fstat[ii-w+1] = ((RSSR-RSSU)/2)/(RSSU/(n-4))
             Pval[ii-w+1] = 1-sp.stats.f.cdf(Fstat[ii-w+1],2,n-4)
+            
             plt.plot(t,Pval,t,0.01*np.ones_like(Pval))
             plt.title(f'Chow test for {name} - moving break date')
-            plt.savefig(folder_name + '/' + f'CHOWING OF {name}' + '.png', dpi=300)
+            plt.savefig(os.path.join(folder_path, f'CHOWING OF {name}.png'), dpi=300)
             plt.close()
+
+
+def multifactor_model_4(Stocks, factor_1, factor_2, factor_3, factor_4, factor_5):
+    '''
+    Return: df with alphas, betas, r_squared, pvalue
+            results of OLS
+    '''
+    n = len(factor_1)
+    results = []
+    
+    X = np.column_stack((np.ones_like(factor_1), factor_1, factor_2, factor_3, factor_4, factor_5))
+    
+    for stock in Stocks:
+        result = sm.OLS(stock,X).fit()
+        results.append(result)
+        '''X = np.column_stack((np.ones_like(Market)), Market, factor_1, factor_3, factor_4)
+        Res2 = sm.OLS(stock,X).fit()
+        print(Res2.summary())
+        RSSU = Res1.ssr
+        RSSR = Res2.ssr
+        Fstat = ((RSSR-RSSU)/3)/(RSSU/(n))
+        Pval = 1-sp.stats.f.cdf(Fstat,3,n)
+        print(Pval)'''
+    return results
+    
+    
+def correlation_residuals(results_CAPM, results_multifactor, name_stocks, folder_name):
+    folder_path = create_folder(folder_name)
+    
+    t = pd.date_range(start = '2009-12-01', end ='2023-10-31', freq ='M')
+    
+    residuals_CAPM = residuals(results_CAPM)
+    residuals_multifactor = residuals(results_multifactor)
+    
+    if len(residuals_CAPM) != len(residuals_multifactor):
+        raise ValueError("Lengths of residuals should be equal.")
+    
+    correlations = []
+    
+    for i, name in zip(range(len(residuals_CAPM)), name_stocks):
+        correlation, _ = sp.stats.pearsonr(residuals_CAPM[i], residuals_multifactor[i])
+        correlations.append(correlation)
+        
+        fig, ax = plt.subplots()
+        ax.plot(t, residuals_CAPM[i], label='CAPM', color='blue', alpha=0.8)
+        ax.plot(t, residuals_multifactor[i], label='Multifactor', color='red', alpha=0.7)
+        ax.set_xlabel('Window Index')
+        ax.set_ylabel('Value Residual')
+        ax.set_title(f'{name} with Market and 4 factor')
+        ax.legend()
+        plt.savefig(os.path.join(folder_path, f'{name}.png'), dpi=300)
+        plt.close()
+    
+    return correlations
+    
+    
+def rolling_capm(Market, Stocks, name_stocks, folder_name):
+    
+    folder_path = create_folder(folder_name)
+        
+    window_size = 60
+    
+    t = pd.date_range(start = '2014-11-01', end ='2023-10-31', freq ='M')
+    
+    for stock, name in zip(Stocks, name_stocks):
+        alphas = []
+        betas = []
+        r_squareds = []
+        conf_alpha_up = []
+        conf_alpha_low = []
+        conf_beta_up = []
+        conf_beta_low = []
+        
+        for i in range(len(stock) - window_size + 1):
+            window_returns_stock = pd.DataFrame(stock[i:i+window_size], columns=['Returns'])
+            window_returns_mkt = pd.DataFrame(Market[i:i+window_size], columns=['Market Returns'])
+            X = sm.add_constant(window_returns_mkt)
+            model = sm.OLS(window_returns_stock, X)
+            results_model = model.fit()
+            confidence = results_model.conf_int()
+            
+            # Store the estimated parameters
+            alpha = results_model.params[0]
+            beta = results_model.params[1]
+            r_squared = results_model.rsquared
+
+            alphas.append(alpha)
+            betas.append(beta)
+            r_squareds.append(r_squared)
+            conf_alpha_up.append(confidence.iloc[0,1])
+            conf_beta_up.append(confidence.iloc[1,1])
+            conf_alpha_low.append(confidence.iloc[0,0])
+            conf_beta_low.append(confidence.iloc[1,0])
+            
+        fig, ax = plt.subplots()
+        ax.plot(t, conf_alpha_up, label='Upper')
+        ax.plot(t, conf_alpha_low, label='Lower')
+        ax.plot(t, alphas, label='Alpha')
+        ax.set_xlabel('Window Index')
+        ax.set_ylabel('Value')
+        ax.set_title(f'Alpha - {name}')
+        ax.legend()
+        plt.savefig(os.path.join(folder_path, f'Alpha - {name}.png'), dpi=300)
+        plt.close()
+        
+        fig1, bx = plt.subplots()
+        bx.plot(t, conf_beta_up, label='Upper')
+        bx.plot(t, conf_beta_low, label='Lower')
+        bx.plot(t, betas, label=f'Beta')
+        bx.set_xlabel('Window Index')
+        bx.set_ylabel('Value')
+        bx.set_title(f'Beta - {name}')
+        bx.legend()
+        plt.savefig(os.path.join(folder_path, f'Beta - {name}.png'), dpi=300)
+        plt.close()
+        
+        plt.plot(t, r_squareds)
+        plt.xlabel('Window Index')
+        plt.ylabel('Value')
+        plt.title(f'R squared - {name}')
+        plt.savefig(os.path.join(folder_path, f'R squared - {name}.png'), dpi=300)
+        plt.close()
+        
