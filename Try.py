@@ -68,8 +68,8 @@ HML = FF_data['HML']
 RMW = FF_data['RMW']
 CMA = FF_data['CMA']
 
-results_multifactor = ex.multifactor_model_4(erBanks, Mkt_RF, SMB, HML, RMW, CMA)
-
+results_multifactor = ex.multifactor_model_4(erMkt, erBanks, Mkt_RF, SMB, HML, RMW, CMA)
+# In this case HML, RMW, CMA are statistically significat
 results_CAPM = ex.ols_sum(erMkt, erBanks)
 
 corr = ex.correlation_residuals(results_CAPM, results_multifactor, BANKS.columns, 

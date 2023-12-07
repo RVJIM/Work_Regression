@@ -40,7 +40,7 @@ def scatterplot(Market, Stocks, title, xlabel, ylabel, how_to_save, folder_name)
         plt.title(title)
         plt.xlabel(xlabel)
         plt.ylabel(ylabel_i)
-        plt.savefig(folder_path + how_to_save + ylabel_i + '.png')
+        plt.savefig(folder_path + '/' + how_to_save + ylabel_i + '.png')
         plt.close()
   
   
@@ -155,25 +155,6 @@ def durbin_watson_test(Market, Stocks, df):
     df['DW_Test'] = dw_values
     return df
     
-
-'''def DataFrame(index_df, folder_name, name_file, list_elements):
-    cwd = os.getcwd()
-    
-    if not os.path.exists(folder_name):
-        folder_name = os.mkdir(cwd + "/" + folder_name)
-    
-    df = pd.DataFrame(index = index_df)
-    
-    for n, e in zip(list_elements):
-        df[n] = e
-        
-    file = folder_name + "/" + name_file + '.xlsx'
-    
-    if not os.path.exists(file):
-        df.to_excel(file)
-    
-    return df'''
-    
     
 def chow_test(Market, Stocks, name_Stocks, folder_name):
     folder_path = create_folder(folder_name)
@@ -220,14 +201,12 @@ def multifactor_model_4(Market, Stocks, factor_1, factor_2, factor_3, factor_4, 
     for stock in Stocks:
         result = sm.OLS(stock,X).fit()
         results.append(result)
-        #print(result.summary())
         X = np.column_stack((np.ones_like(Market), Market, factor_3, factor_4, factor_5))
         Res2 = sm.OLS(stock,X).fit()
-        #print(Res2.summary())
         RSSU = result.ssr
         RSSR = Res2.ssr
-        Fstat = ((RSSR-RSSU)/3)/(RSSU/(n))
-        Pval = 1-sp.stats.f.cdf(Fstat,3,n)
+        Fstat = ((RSSR-RSSU)/4)/(RSSU/(n))
+        Pval = 1-sp.stats.f.cdf(Fstat,4,n)
         print(Pval)
     return results
     
