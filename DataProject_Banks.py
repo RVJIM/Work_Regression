@@ -1,10 +1,7 @@
 import numpy as np
-import matplotlib.pyplot as plt
 import pandas as pd
-import seaborn as sns
-import scipy as sp
-import statsmodels.api as sm
 import Functions as fun
+import os
 
 # Define date - time index monthly
 t=pd.date_range(start ='01-11-2009', end ='31-10-2023', freq ='M')
@@ -40,26 +37,23 @@ d_banks_ex = {BANKS.columns[i]: erBanks[i] for i in range(len(BANKS.columns))}
 fun.scatterplot(erMkt,erBanks, "Excess Return", "STOXXEURO 600", BANKS,
                'StoxxEuro vs ','Equity vs Mkt')
 
+# Create folder for Parameters
+folder = fun.create_folder('Parameters')
+
 # DataFrame with all quantities we need (I think)
 df_quants = fun.OLS(erMkt, erBanks, BANKS.columns)
-print(df_quants)
 
-''' 
-    If you want to download .xlsx file, change 40 with this
-    df_quants.to_excel('Quants.xlsx')
-'''
+# To download .xlsx file
+df_quants.to_excel(os.path.join(folder,'OLS.xlsx'))
 
 # Average return accross the equities' excess return - returns of an equally weighted portfolio
 average_erBanks = sum(erBanks)/len(erBanks)
 
 # DataFrame with all quantities for equally weighted portfolio
 df_av_quants = fun.OLS(erMkt, average_erBanks, BANKS.columns)
-print(df_av_quants)
 
-''' 
-    If you want to download .xlsx file, change 51 with this
-    df_av_quants.to_excel('Quants_Weighted_Portfolio.xlsx')
-'''
+# To download .xlsx file, change 40 with this
+df_av_quants.to_excel(os.path.join(folder,'OLS_Weighted_Portfolio.xlsx'))
 
 # Create DataFrame for tests
 df_tests = pd.DataFrame(index = BANKS.columns)
@@ -71,10 +65,8 @@ df_tests = fun.white_test(erMkt, erBanks, df_tests)
 df_tests = fun.breusch_godfrey_test(erMkt, erBanks, df_tests)
 df_tests = fun.durbin_watson_test(erMkt, erBanks, df_tests)
 
-''' 
-    If you want to download .xlsx file, change 51 with this
-    df_tests.to_excel('Tests.xlsx')
-'''
+# To download .xlsx file
+df_tests.to_excel(os.path.join(folder,'Tests_Banks.xlsx'))
 
 # OLS with robust standard errors
 fun.ols_rob_ste(erMkt, d_banks_ex, df_tests, 'Robust Standar Error', 'HAC')
@@ -93,19 +85,23 @@ HML = FF_data['HML']
 RMW = FF_data['RMW']
 CMA = FF_data['CMA']
 
-results_multifactor = fun.multifactor_model_4(erMkt, erBanks, Mkt_RF, SMB, HML, RMW, CMA)
+results_multifactor, df_multifactor = fun.multifactor_model_4(erMkt, erBanks, Mkt_RF, SMB, HML, RMW, CMA, BANKS.columns)
+
+df_multifactor.to_excel(os.path.join(folder,'Multifactor.xlsx'))
+
+fun.subplots(results_multifactor, 'Parameters in Multifactor', BANKS.columns)
 
 # In this case HML, RMW, CMA are relevant variables
 # We have all pvalue = 1, except the Market
 
 results_CAPM = fun.ols_sum(erMkt, erBanks)
 
-corr = fun.correlation_residuals(results_CAPM, results_multifactor, BANKS.columns, 
-                                'Residuals with Market and 4 factor of Fama-French')
-print(corr)
+fun.hist_residuals(results_CAPM, results_multifactor, BANKS.columns, 'Histogram of residue frequencies')
+fun.correlation_residuals(results_CAPM, results_multifactor, BANKS.columns, 
+                                'Residuals Correlation')
 
 # Compute and create lineplot for Chow Test - moving break dates 
-#fun.chow_test(erMkt, erBanks, BANKS.columns, 'Chow_Testing')
+fun.chow_test(erMkt, erBanks, BANKS.columns, 'Chow_Testing')
 
 # Re-estimate the CAPM model for very window of size 5 years
 # by moving the estimation sample by one month at a time

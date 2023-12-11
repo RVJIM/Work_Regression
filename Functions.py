@@ -80,6 +80,7 @@ def ols_rob_ste(Market, dict_Stocks, df_tests, folder_name, covariance_type):
 
 
 def OLS(Market, Stocks, names_stocks, covariance_type='nonrobust'):
+    
     dict = {}
  
     try:
@@ -91,7 +92,7 @@ def OLS(Market, Stocks, names_stocks, covariance_type='nonrobust'):
                           round(Res1.pvalues[1],4), round(Res1.rsquared,4)]
         
     except:
-        X = np.column_stack((np.ones_like(Stocks), Stocks))
+        X = np.column_stack((np.ones_like(Market), Market))
         Res1 = sm.OLS(Stocks, X).fit()
         dict["Equally Weighted Portfolio"] = [Res1.params[0], Res1.params[1], Res1.pvalues[1], Res1.rsquared]
         
@@ -188,29 +189,71 @@ def chow_test(Market, Stocks, name_Stocks, folder_name):
             plt.close()
 
 
-def multifactor_model_4(Market, Stocks, factor_1, factor_2, factor_3, factor_4, factor_5):
+def multifactor_model_4(Market, Stocks, factor_1, factor_2, factor_3, factor_4, factor_5, name_stocks):
     '''
     Return: df with alphas, betas, r_squared, pvalue
             results of OLS
     '''
     n = len(Market)
     results = []
-    
+    dict = {}
     X = np.column_stack((np.ones_like(Market), Market, factor_1, factor_2, factor_3, factor_4, factor_5))
     
-    for stock in Stocks:
+    for stock,name in zip(Stocks, name_stocks):
         result = sm.OLS(stock,X).fit()
         results.append(result)
         X = np.column_stack((np.ones_like(Market), Market, factor_3, factor_4, factor_5))
         Res2 = sm.OLS(stock,X).fit()
+        dict[name] = [round(Res2.params[0],4), round(Res2.params[1],4), 
+                          round(Res2.pvalues[1],4), round(Res2.rsquared,4)]
         RSSU = result.ssr
         RSSR = Res2.ssr
         Fstat = ((RSSR-RSSU)/4)/(RSSU/(n))
         Pval = 1-sp.stats.f.cdf(Fstat,4,n)
         print(Pval)
-    return results
+    df = pd.DataFrame(dict, index=['alpha', 'beta', 'pvalue', 'r_squared'])
+    return results, df.T
+
+def subplots(results_ols, folder_name, name_stocks):
+    folder_path = create_folder(folder_name)
+    fig, ax = plt.subplots(3,1, figsize=(8,12))
+    ax[0].plot([result.params[0] for result in results_ols])
+    ax[0].set_xticks(range(len(name_stocks)))
+    ax[0].set_xticklabels(name_stocks, rotation=45, ha='right')
+    ax[0].set_title('Alpha')
+    ax[1].plot([result.params[1] for result in results_ols])
+    ax[1].set_xticks(range(len(name_stocks)))
+    ax[1].set_xticklabels(name_stocks, rotation=45, ha='right')
+    ax[1].set_title('Beta')
+    ax[2].plot([result.rsquared for result in results_ols])
+    ax[2].set_xticks(range(len(name_stocks)))
+    ax[2].set_xticklabels(name_stocks, rotation=45, ha='right')
+    ax[2].set_title('R-squared')
+    plt.tight_layout()
+    plt.savefig(os.path.join(folder_path, f'Parameters for each bank.png'), dpi=300)
+    plt.close()
+
+
+def hist_residuals(results_CAPM, results_multifactor, name_stocks, folder_name):
     
+    folder_path = create_folder(folder_name)
     
+    residuals_CAPM = residuals(results_CAPM)
+    residuals_multifactor = residuals(results_multifactor)
+    
+    for i,name in zip(range(len(residuals_CAPM)),name_stocks):
+        
+        fig, ax = plt.subplots()
+        ax.hist(residuals_CAPM[i], alpha=0.7, bins=25, label='CAPM')
+        ax.hist(residuals_multifactor[i], alpha=0.7, bins=25, label='Multifactor')
+        ax.set_xlabel('Value of residual')
+        ax.set_ylabel('Frequency')
+        ax.set_title(f'{name} - Residuals')
+        ax.legend()
+        plt.savefig(os.path.join(folder_path, f'{name}.png'), dpi=300) 
+        plt.close()
+             
+
 def correlation_residuals(results_CAPM, results_multifactor, name_stocks, folder_name):
     folder_path = create_folder(folder_name)
     
@@ -218,8 +261,7 @@ def correlation_residuals(results_CAPM, results_multifactor, name_stocks, folder
     
     residuals_CAPM = pd.DataFrame(residuals(results_CAPM), index=name_stocks, columns=t)
     residuals_multifactor = pd.DataFrame(residuals(results_multifactor), index=name_stocks, columns=t)
-    print(residuals_CAPM.corr())
-    print(residuals_CAPM)
+
     if len(residuals_CAPM) != len(residuals_multifactor):
         raise ValueError("Lengths of residuals should be equal.")
     
@@ -239,7 +281,7 @@ def correlation_residuals(results_CAPM, results_multifactor, name_stocks, folder
         plt.savefig(os.path.join(folder_path, f'{name}.png'), dpi=300)
         plt.close()
     
-    return correlations
+    print(correlations)
     
     
 def rolling_capm(Market, Stocks, name_stocks, folder_name):
@@ -267,9 +309,8 @@ def rolling_capm(Market, Stocks, name_stocks, folder_name):
             results_model = model.fit()
             confidence = results_model.conf_int()
             
-            # Store the estimated parameters
-            alpha = results_model.params[0]
-            beta = results_model.params[1]
+            alpha = results_model.params.iloc[0]
+            beta = results_model.params.iloc[1]
             r_squared = results_model.rsquared
 
             alphas.append(alpha)

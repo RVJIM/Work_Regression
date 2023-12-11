@@ -4,7 +4,7 @@ import pandas as pd
 import seaborn as sns
 import scipy as sp
 import statsmodels.api as sm
-import Experimental as ex
+import Functions as ex
 
 # Define date - time index monthly
 t = pd.date_range(start ='01-11-2009', end ='31-10-2023', freq ='M')
@@ -32,6 +32,10 @@ rF = np.array(RFREE/12)
 erBanks = np.subtract(rBanks, rF)[1:].T
 erMkt = np.subtract(rMkt, rF)[1:]
 
+# Dictionary of Banks: 1 - return in percentages, 2 - excess returns
+d_banks_r = {BANKS.columns[i]: rBanks[i+1] for i in range(len(BANKS.columns))}
+d_banks_ex = {BANKS.columns[i]: erBanks[i] for i in range(len(BANKS.columns))}
+
 ''''ex.scatterplot(erMkt,erBanks, "Excess Return", "STOXXEURO 600", BANKS,
                'STOXXEURO vs ','Equity_vs_Mkt')'''
 
@@ -43,17 +47,20 @@ average_erBanks = (sum(erBanks)/len(erBanks)).T
 df_av_quants = ex.OLS(erMkt, average_erBanks, BANKS.columns)
 df_av_quants.to_latex('Quantities_Weighted_Portfolio.lex')'''
 
-# Create DataFrame for tests
-'''df_tests = pd.DataFrame(index = BANKS.columns)
+'''# Create DataFrame for tests
+df_tests = pd.DataFrame(index = BANKS.columns)
 
-# Compute: RESET, WHite, Breusch-GOdfrey and Durbin-Watson tests
+# Compute: RESET, White, Breusch-Godfrey and Durbin-Watson tests
 # And insert them in previously created DataFrame 
-df_tests = ex.RESET_test(erMkt, erBanks, df_tests)
-df_tests = ex.White_test(erMkt, erBanks, df_tests)                         
-df_tests = ex.Breusch_Godfrey_test(erMkt, erBanks, df_tests)
-df_tests = ex.Durbin_Watson_test(erMkt, erBanks, df_tests)
+df_tests = ex.reset_test(erMkt, erBanks, df_tests)
+df_tests = ex.white_test(erMkt, erBanks, df_tests)                         
+df_tests = ex.breusch_godfrey_test(erMkt, erBanks, df_tests)
+df_tests = ex.durbin_watson_test(erMkt, erBanks, df_tests)
 #df_tests.to_latex('Tests.lex')
-#print(df_tests)'''
+#print(df_tests)
+
+#ols with robust standard errors
+ex.ols_rob_ste(erMkt, d_banks_ex, df_tests, 'Robust Standar Error', 'HAC')'''
 
 #Fama-French
 '''FF_data = pd.read_csv('Europe_5_Factors.csv', skiprows=3, nrows=400, index_col=0)

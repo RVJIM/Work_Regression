@@ -1,6 +1,0 @@
-1. Fix the index and columns in df_quants
-2. Create a function where I create a DataFrame, 
-    put it in a folder and insert name columns and respectively values
-3. Check Fama-French Factors, if these are which correct
-
-(Describe that excess return are equal to percentage return, in the sense that we have the same results)

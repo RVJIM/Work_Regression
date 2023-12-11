@@ -226,8 +226,8 @@ def multifactor_model_4(Market, Stocks, factor_1, factor_2, factor_3, factor_4, 
         #print(Res2.summary())
         RSSU = result.ssr
         RSSR = Res2.ssr
-        Fstat = ((RSSR-RSSU)/3)/(RSSU/(n))
-        Pval = 1-sp.stats.f.cdf(Fstat,3,n)
+        Fstat = ((RSSR-RSSU)/4)/(RSSU/(n))
+        Pval = 1-sp.stats.f.cdf(Fstat,4,n)
         print(Pval)
     return results
     
